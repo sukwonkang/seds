@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlinx.coroutines.*
+import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 
 class ShapeFieldView @JvmOverloads constructor(
@@ -189,6 +191,50 @@ class ShapeFieldView @JvmOverloads constructor(
             shapes.add(shape)
         }
     }
+    fun makeThumbnailUrl(ourl: String, width: Int): String {
+        val url = URL(ourl.replaceFirst("http://", "https://"))
+        val connection = url.openConnection() as HttpsURLConnection
+        connection.instanceFollowRedirects = false
+        connection.connect()
+
+        var redirectedUrl = connection.getHeaderField("Location")
+        connection.disconnect()
+        redirectedUrl = resolveFinalImageUrl(redirectedUrl)
+        if (redirectedUrl != null && redirectedUrl.contains("upload.wikimedia.org")) {
+            val regex = Regex("""upload\.wikimedia\.org/wikipedia/commons/(\w)/(\w\w)/(.+?)$""")
+            val match = regex.find(redirectedUrl)
+            return if (match != null) {
+                val (first, second, filename) = match.destructured
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/$first/$second/$filename/${width}px-$filename"
+            } else {
+                return ourl
+            }
+        }
+        return ourl
+    }
+    fun resolveFinalImageUrl(startUrl: String): String {
+        var currentUrl = startUrl
+        var redirecting = true
+
+        while (redirecting) {
+            val url = URL(currentUrl)
+            val connection = url.openConnection() as HttpsURLConnection
+            connection.instanceFollowRedirects = false
+            connection.connect()
+
+            val redirect = connection.getHeaderField("Location")
+            if (redirect != null) {
+                currentUrl = redirect
+            } else {
+                redirecting = false
+            }
+
+            connection.disconnect()
+        }
+
+        return currentUrl
+    }
+
     private fun showImagePopup(imageUrl: String) {
 
         var mm  = context as? Activity
@@ -207,13 +253,13 @@ class ShapeFieldView @JvmOverloads constructor(
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val url = java.net.URL(secureUrl)
+                    val url = java.net.URL(makeThumbnailUrl(secureUrl,600))
                     val connection = url.openConnection() as javax.net.ssl.HttpsURLConnection
                     connection.doInput = true
                     connection.connect()
                     val input = connection.inputStream
                     val byteArray = input.readBytes()
-                    val sizeKB = byteArray.size / 1024.0
+                    val sizeKB = byteArray.size / (1024.0 * 1024.0)
                     BitmapFactory.Options().apply {
                         inSampleSize = 4 // or 4, depending on image size
                     }

@@ -18,6 +18,7 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import okhttp3.Call
@@ -34,14 +35,10 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var shapeFieldView: ShapeFieldView
-    var responseSizeKB = 0f
+    private var responseSizeKB : Float = 0f;
     private lateinit var timerText: TextView
     private var secondsElapsed = 0
-    private val client : OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(60,TimeUnit.SECONDS)  // Set connect timeout to 30 seconds
-        .readTimeout(60, TimeUnit.SECONDS)     // Set read timeout to 30 seconds
-        .writeTimeout(60, TimeUnit.SECONDS)    // Optional: Set write timeout to 30 seconds
-        .build()
+
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var radiusSeekBar: SeekBar
     private val timerRunnable = object : Runnable {
@@ -106,25 +103,18 @@ class MainActivity : AppCompatActivity() {
         shapeFieldView = findViewById(R.id.shapeField)
         var ff :TextView = findViewById(R.id.textView)
 
+        responseSizeKB = intent.getFloatExtra("sized",0f)
+        val sresult = intent.getSerializableExtra("splash_result") as ArrayList<List<Dinosaur>>
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val height = displayMetrics.heightPixels
+        val width = displayMetrics.widthPixels
+        shapeFieldView.dinos = sresult.toList()[0].toMutableList()
+        ff.text = (ff.text.toString().toFloat() + responseSizeKB).toString()
+
+        shapeFieldView.generateShapes(width,height)
+
         progressBar = findViewById(R.id.progressBar)
-        progressBar?.visibility = View.VISIBLE
-        getDinos { result ->
-            // Handle the list of results here
-            if (result.isNotEmpty()) {
-                // You can now use this list for UI updates, e.g., displaying in a TextView
-                shapeFieldView.dinos = result.toMutableList()
-                val displayMetrics = DisplayMetrics()
-                windowManager.defaultDisplay.getMetrics(displayMetrics)
-                val height = displayMetrics.heightPixels
-                val width = displayMetrics.widthPixels
-                shapeFieldView.generateShapes(width,height)
-                runOnUiThread {
-                    ff.text = (ff.text.toString().toFloat() + responseSizeKB).toString()
-                    progressBar?.visibility = View.GONE
-                }
-            } else {
-                // Handle empty or error result
-            } }
 
         timerText = findViewById(R.id.timerText)
 
@@ -154,57 +144,5 @@ class MainActivity : AppCompatActivity() {
             shapeFieldView.pause(lifecycleScope)
         }
     }
-    private fun getDinos(callback: (List<Dinosaur>) -> Unit) {
-        val query = """
-            SELECT ?dinosaur ?dinosaurLabel ?image WHERE {
-              ?dinosaur wdt:P31 wd:Q23038290;          # Instance of Dinosaur
-                       wdt:P18 ?image.             # Image property
-              SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
-            }
-            ORDER BY RAND()  # Randomize the results
-            LIMIT 5
-        """
-        val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
-        val url = "https://query.wikidata.org/sparql?query=$encodedQuery&format=json"
 
-
-        val request = Request.Builder()
-            .url(url)
-            .header("Accept", "application/json")
-            .header("User-Agent", "DinoExplorer/1.0")
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                callback(emptyList())
-                //Toast.makeText(scopee,"$e",Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val jsonResponse = response.body?.string()
-                    val responseSizeBytes = jsonResponse?.toByteArray()?.size ?: 0
-                    responseSizeKB =+ responseSizeBytes / 1024.0f
-                    val jsonObject = JSONObject(jsonResponse)
-                    val results = jsonObject.getJSONObject("results").getJSONArray("bindings")
-                    val dinosaursList = mutableListOf<Dinosaur>()
-                    for (i in 0 until results.length()) {
-                        val result = results.getJSONObject(i)
-
-                        // Extract dinosaur label (name)
-                        val dinosaurLabel = result.getJSONObject("dinosaurLabel").getString("value")
-
-                        // Extract image URL (if available)
-                        val imageUrl = result.getJSONObject("image").getString("value")
-
-                        // Add the dinosaur data to the list
-                        dinosaursList.add(Dinosaur(dinosaurLabel, imageUrl))
-                    }
-
-                    // Return the list of dinosaurs through the callback
-                    callback(dinosaursList)
-                }
-            }
-        })
-    }
 }
