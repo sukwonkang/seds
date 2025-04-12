@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var shapeFieldView: ShapeFieldView
+    var responseSizeKB = 0f
     private lateinit var timerText: TextView
     private var secondsElapsed = 0
     private val client : OkHttpClient = OkHttpClient.Builder()
@@ -90,12 +91,9 @@ class MainActivity : AppCompatActivity() {
             window.decorView.post {
             window.insetsController?.hide(WindowInsets.Type.statusBars())
             window.setDecorFitsSystemWindows(false)}
-        }else{
-        // Fullscreen immersive
-
-
-
-    }
+        }else {
+            // Fullscreen immersive
+        }
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -106,6 +104,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
         shapeFieldView = findViewById(R.id.shapeField)
+        var ff :TextView = findViewById(R.id.textView)
 
         progressBar = findViewById(R.id.progressBar)
         progressBar?.visibility = View.VISIBLE
@@ -120,6 +119,7 @@ class MainActivity : AppCompatActivity() {
                 val width = displayMetrics.widthPixels
                 shapeFieldView.generateShapes(width,height)
                 runOnUiThread {
+                    ff.text = (ff.text.toString().toFloat() + responseSizeKB).toString()
                     progressBar?.visibility = View.GONE
                 }
             } else {
@@ -146,8 +146,6 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnAdd).setOnClickListener {
                 shapeFieldView.changeDirection()
-
-           // shapeFieldView.addRandomBlob()
         }
         findViewById<Button>(R.id.btnRemove).setOnClickListener {
             shapeFieldView.speedUp(lifecycleScope)
@@ -185,6 +183,8 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     val jsonResponse = response.body?.string()
+                    val responseSizeBytes = jsonResponse?.toByteArray()?.size ?: 0
+                    responseSizeKB =+ responseSizeBytes / 1024.0f
                     val jsonObject = JSONObject(jsonResponse)
                     val results = jsonObject.getJSONObject("results").getJSONArray("bindings")
                     val dinosaursList = mutableListOf<Dinosaur>()

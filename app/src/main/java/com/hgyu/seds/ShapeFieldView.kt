@@ -1,12 +1,16 @@
 package com.hgyu.seds
 
+import android.app.Activity
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.widget.ProgressBar
+import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -66,38 +70,6 @@ class ShapeFieldView @JvmOverloads constructor(
             field = value
             invalidate()
         }
-    private fun showImagePopup(imageUrl: String) {
-        val builder = android.app.AlertDialog.Builder(context)
-        val imageView = android.widget.ImageView(context)
-
-        val secureUrl = if (imageUrl.startsWith("http://")) {
-            imageUrl.replaceFirst("http://", "https://")
-        } else {
-            imageUrl
-        }
-
-        android.os.Handler(android.os.Looper.getMainLooper()).post {
-            CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                try {
-                    val url = java.net.URL(secureUrl)
-                    val connection = url.openConnection() as javax.net.ssl.HttpsURLConnection
-                    connection.doInput = true
-                    connection.connect()
-                    val input = connection.inputStream
-                    val bitmap = android.graphics.BitmapFactory.decodeStream(input)
-
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        imageView.setImageBitmap(bitmap)
-                        builder.setView(imageView)
-                        builder.setPositiveButton("Close", null)
-                        builder.show()
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
 
     init {
         setOnTouchListener { _: View, event: MotionEvent ->
@@ -217,7 +189,54 @@ class ShapeFieldView @JvmOverloads constructor(
             shapes.add(shape)
         }
     }
+    private fun showImagePopup(imageUrl: String) {
 
+        var mm  = context as? Activity
+        var progressBar: ProgressBar? = mm?.findViewById(R.id.progressBar)
+        var ff:TextView? = mm?.findViewById(R.id.textView)
+        progressBar?.visibility = View.VISIBLE
+        val builder = android.app.AlertDialog.Builder(context)
+        val imageView = android.widget.ImageView(context)
+
+        val secureUrl = if (imageUrl.startsWith("http://")) {
+            imageUrl.replaceFirst("http://", "https://")
+        } else {
+            imageUrl
+        }
+
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val url = java.net.URL(secureUrl)
+                    val connection = url.openConnection() as javax.net.ssl.HttpsURLConnection
+                    connection.doInput = true
+                    connection.connect()
+                    val input = connection.inputStream
+                    val byteArray = input.readBytes()
+                    val sizeKB = byteArray.size / 1024.0
+                    BitmapFactory.Options().apply {
+                        inSampleSize = 4 // or 4, depending on image size
+                    }
+                    val bitmap =BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+
+                    withContext(Dispatchers.Main) {
+                        imageView.setImageBitmap(bitmap)
+                        builder.setView(imageView)
+
+                        mm?.runOnUiThread {
+                            ff?.text = (ff?.text.toString().toFloat() + sizeKB).toString()
+                            progressBar?.visibility = View.GONE
+                        }
+
+                        builder.setPositiveButton("Close", null)
+                        builder.show()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
