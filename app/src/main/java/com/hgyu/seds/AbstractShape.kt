@@ -1,12 +1,10 @@
 package com.hgyu.seds
 
 import android.graphics.*
+import com.hgyu.seds.util.SineLUT
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -18,7 +16,8 @@ abstract class AbstractShape(
     val id: String,
     var width: Int,
     val height: Int,
-    val img: String
+    val img: String,
+    var sizekb : Float
 ) {
     protected val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE

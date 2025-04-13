@@ -2,15 +2,15 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#40826D"> <!-- Viridian green -->
+    android:background="#f4e4cc" > <!-- Viridian green -->
 
     <!-- App logo centered -->
     <ImageView
         android:id="@+id/splash_logo"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="233dp"
+        android:layout_height="233dp"
         android:layout_centerInParent="true"
-        android:src="@mipmap/ic_launcher_round"
+        android:src="@drawable/fdg"
         android:contentDescription="App Logo" />
 
     <!-- Loading text below the logo -->
@@ -21,9 +21,9 @@
         android:layout_below="@id/splash_logo"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"
-        android:text="Loading creative tools..."
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
+        android:text="Loading dinos i guess..."
+        android:textColor="#000"
+        android:textSize="20sp"
         android:fontFamily="sans-serif-light" />
 
 </RelativeLayout>

@@ -3,6 +3,8 @@ package com.hgyu.seds
 import android.graphics.*
 import android.os.Handler
 import android.os.Looper
+import android.view.View
+import com.hgyu.seds.util.Tools.Companion.makeThumbnailUrl
 import kotlinx.coroutines.*
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
@@ -17,8 +19,9 @@ class RandomBlobShape(
     id: String,
     img: String,
     width: Int,
-    height: Int
-) : AbstractShape(x, y, baseSize, color, id, width, height, img) {
+    height: Int,
+    sizekb: Float
+) : AbstractShape(x, y, baseSize, color, id, width, height, img, sizekb) {
 
     private val blobPath = Path()
     private val angles = List(12) { it * (2 * Math.PI / 12).toFloat() }
@@ -31,25 +34,24 @@ class RandomBlobShape(
     }
 
     private fun loadImageAsync(url: String) {
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val secureImg = if (url.startsWith("http://")) {
-                    url.replaceFirst("http://", "https://")
-                } else {
-                    url
-                }
-
-                val connection = URL(secureImg).openConnection() as HttpsURLConnection
+                val connection = URL(makeThumbnailUrl(url,300)).openConnection() as HttpsURLConnection
                 connection.doInput = true
                 connection.connect()
                 val inputStream = connection.inputStream
-                val options = BitmapFactory.Options().apply {
-                    inSampleSize = 16 // or 4, depending on image size
+                val byteArray = inputStream.readBytes()
+                sizekb = byteArray.size / (1024.0f * 1024.0f)
+                var options = BitmapFactory.Options().apply {
+                    inSampleSize = 8 // or 4, depending on image size
                 }
-                val bmp = BitmapFactory.decodeStream(inputStream,null,options)
+                val bmp =BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size,options)
                 withContext(Dispatchers.Main) {
                     bitmap = bmp
                 }
+
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
