@@ -19,9 +19,14 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.hgyu.seds.R
+import com.hgyu.seds.RandomBlobShape
 import com.hgyu.seds.views.ShapeFieldView
 import com.hgyu.seds.data.Dinosaur
+import com.hgyu.seds.util.Tools
 
 
 class MainActivity : AppCompatActivity() {
@@ -93,17 +98,24 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         shapeFieldView = findViewById(R.id.shapeField)
         var ff :TextView = findViewById(R.id.textView)
-
-        responseSizeKB = intent.getFloatExtra("sized",0f)
-        val sresult = intent.getSerializableExtra("splash_result") as ArrayList<List<Dinosaur>>
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
         val height = displayMetrics.heightPixels
         val width = displayMetrics.widthPixels
-        shapeFieldView.dinos = sresult.toList()[0].toMutableList()
+
+        responseSizeKB = intent.getFloatExtra("sized",0f)
         ff.text = (ff.text.toString().toFloat() + responseSizeKB).toString()
 
-        shapeFieldView.generateShapes(width,height)
+        val sresult = intent.getSerializableExtra("splash_result") as ArrayList<List<Dinosaur>>
+        shapeFieldView.dinos = sresult.toList()[0].toMutableList()
+
+        for (dino in shapeFieldView.dinos) {
+            shapeFieldView.shapes.add(RandomBlobShape(dino.x,dino.y,dino.baseSize,dino.color,dino.id,dino.img,dino.width,dino.height,dino.sizekb))
+        }
+
+        //shapeFieldView.generateShapes(width,height)
+        //val db = Firebase.firestore
+        //Tools.uploadShapesToFirebase(shapeFieldView.shapes,db)
 
         progressBar = findViewById(R.id.progressBar)
 

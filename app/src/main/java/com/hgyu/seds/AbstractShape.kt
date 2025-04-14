@@ -5,6 +5,7 @@ import com.hgyu.seds.util.SineLUT
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.Serializable
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -23,6 +24,7 @@ abstract class AbstractShape(
         style = Paint.Style.FILL_AND_STROKE
         this.color = ccolor
     }
+
 
     private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE

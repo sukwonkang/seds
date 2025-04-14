@@ -49,7 +49,7 @@ class ShapeFieldView @JvmOverloads constructor(
     }
     private var isMovingCenterCircle = false
     var selectedShape: AbstractShape? = null
-     val shapes = mutableListOf<AbstractShape>()
+    var shapes = mutableListOf<RandomBlobShape>()
     var dinos = mutableListOf<Dinosaur>()
     private val colors = listOf(
         Color.rgb(189, 226, 255),
@@ -182,7 +182,7 @@ class ShapeFieldView @JvmOverloads constructor(
 
     fun generateShapes(width: Int, height: Int) {
         shapes.clear()
-        val count = 40
+        val count = 3
         var mm  = context as? Activity
         var progressBar: ProgressBar? = mm?.findViewById(R.id.progressBar)
         var ff:TextView? = mm?.findViewById(R.id.textView)
@@ -193,8 +193,8 @@ class ShapeFieldView @JvmOverloads constructor(
             val color = colors.random()
             var shape = RandomBlobShape(x, y, size, color, i.toString(),"", width, height,0f)
 
-            if (dinos.size == 40) {
-                shape = RandomBlobShape(x, y, size, color, dinos[i].name,dinos[i].imageUrl, width, height,0f)
+            if (dinos.size == shapes.size) {
+                shape = RandomBlobShape(x, y, size, color, dinos[i].id,dinos[i].img, width, height,0f)
                 ff?.text = (ff?.text.toString().toFloat() + shape.sizekb).toString()
             }
 

@@ -1,9 +1,6 @@
 package com.hgyu.seds
 
 import android.graphics.*
-import android.os.Handler
-import android.os.Looper
-import android.view.View
 import com.hgyu.seds.util.Tools.Companion.makeThumbnailUrl
 import kotlinx.coroutines.*
 import java.net.URL
@@ -110,4 +107,5 @@ class RandomBlobShape(
             canvas.drawText(id, 0f, -yOffset, textPaint)
         }
     }
+
 }

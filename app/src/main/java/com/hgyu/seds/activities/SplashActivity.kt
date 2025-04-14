@@ -5,8 +5,13 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.hgyu.seds.data.Dinosaur
 import com.hgyu.seds.R
+import com.hgyu.seds.RandomBlobShape
+import com.hgyu.seds.util.Tools
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -20,12 +25,7 @@ import java.util.concurrent.TimeUnit
 
 class SplashActivity : AppCompatActivity() {
     var responseSizeKB = 0f
-    var tdd : TextView? = null
-    private val client : OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)  // Set connect timeout to 30 seconds
-        .readTimeout(60, TimeUnit.SECONDS)     // Set read timeout to 30 seconds
-        .writeTimeout(60, TimeUnit.SECONDS)    // Optional: Set write timeout to 30 seconds
-        .build()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         @Suppress("DEPRECATION")
@@ -36,9 +36,33 @@ class SplashActivity : AppCompatActivity() {
                 )
         supportActionBar?.hide()
         setContentView(R.layout.activity_splash)
+        var tdd : TextView? = null
+        val client : OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)  // Set connect timeout to 30 seconds
+            .readTimeout(60, TimeUnit.SECONDS)     // Set read timeout to 30 seconds
+            .writeTimeout(60, TimeUnit.SECONDS)    // Optional: Set write timeout to 30 seconds
+            .build()
         tdd = findViewById(R.id.loading_text)
+        val db = Firebase.firestore
+        Tools.fetchShapesFromFirebase(db){ result ->
+            // Handle the list of results here
+            if (result.isNotEmpty()) {
+                // You can now use this list for UI updates, e.g., displaying in a TextView
 
-        getDinos { result ->
+                runOnUiThread {
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.putExtra("splash_result", arrayListOf(result))
+                    intent.putExtra("sized",responseSizeKB)
+                    startActivity(intent)
+                    finish()
+                }
+
+            } else {
+                // Handle empty or error result
+            }
+        }
+
+        /*getDinos(tdd,client) { result ->
             // Handle the list of results here
             if (result.isNotEmpty()) {
                 // You can now use this list for UI updates, e.g., displaying in a TextView
@@ -53,19 +77,20 @@ class SplashActivity : AppCompatActivity() {
 
             } else {
                 // Handle empty or error result
-            } }
+            }
+        }*/
 
     }
-    private fun getDinos(callback: (List<Dinosaur>) -> Unit) {
+    private fun getDinos(tdd: TextView?,client:OkHttpClient,callback: (List<Dinosaur>) -> Unit) {
         runOnUiThread {tdd?.text = "Getting dinos from wiki data ..."}
         val query = """
-            SELECT ?dinosaur ?dinosaurLabel ?image WHERE {
+            SELECT DISTINCT ?dinosaur ?dinosaurLabel ?image WHERE {
               ?dinosaur wdt:P31 wd:Q23038290;          # Instance of Dinosaur
                        wdt:P18 ?image.             # Image property
               SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
             }
             ORDER BY RAND()  # Randomize the results
-            LIMIT 40
+            LIMIT 3
         """
         val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
         val url = "https://query.wikidata.org/sparql?query=$encodedQuery&format=json"
@@ -108,7 +133,7 @@ class SplashActivity : AppCompatActivity() {
                         val imageUrl = result.getJSONObject("image").getString("value")
 
                         // Add the dinosaur data to the list
-                        dinosaursList.add(Dinosaur(dinosaurLabel, imageUrl))
+                        dinosaursList.add(Dinosaur(dinosaurLabel,0f,0f,0f,0,0,0,0f, imageUrl))
                     }
                     runOnUiThread {tdd?.text = "dinos goooo ..."}
 
@@ -120,4 +145,7 @@ class SplashActivity : AppCompatActivity() {
             }
         })
     }
+
+
+
 }
